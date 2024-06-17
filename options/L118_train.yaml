@@ -1,0 +1,177 @@
+# general settings
+name: L118_raw
+model_type: RepDiffModel
+num_gpu: 3 # test的时候需要置npm_gpu参数为1,debug设置为1
+manual_seed: 0
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: train
+    type: LL_Dataset
+#    gt_root: /mnt/s1/ly/data/L118/raw/long
+#    input_root: /mnt/s1/ly/data/L118/raw/short
+    gt_root: /data/ly/L118/raw/long
+    input_root: /data/ly/L118/raw/short
+    fns_root: ./data/L118_train.txt
+    input_mode: crop
+    concat_with_position_encoding: true
+    concat_with_hiseq: true
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+    use_flip: true
+
+    bright_aug: true
+    bright_aug_range: [0.5, 1.5]
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 8
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+    camera: L118
+    crop_size: 256
+    stage_in: raw # or srgb
+    save_syn_data: False # 保存raw合成噪声
+    save_syn_rgb: False # 保存合成噪声rgb版
+    read_syn_data: False # 读合成噪声的npy
+    read_real_data: True # 读合成噪声的npy
+#    real_data_root: /mnt/s1/ly/data/L118/raw/short/
+    real_data_root: /data/ly/L118/raw/short
+    train_syn_save_num: 1
+
+  val:
+    name: validation
+    type: LL_Dataset
+#    gt_root: /mnt/s1/ly/data/L118/raw/long
+#    input_root: /mnt/s1/ly/data/L118/raw/short
+    gt_root: /data/ly/L118/raw/long
+    input_root: /data/ly/L118/raw/short
+    # train
+    fns_root: ./data/L118_val.txt
+#    fns_root: ./data/L118_val_debug.txt
+#    crop_size: 512
+    read_real_data: True
+    concat_with_hiseq: true
+#    input_mode: crop
+    divide: 32
+    concat_with_position_encoding: true
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+    camera: L118
+    stage_in: raw # or srgb
+
+# network structures
+network_unet:
+  type: SR3UNet
+  inner_channel: 64
+  norm_groups: 32
+  channel_mults: [1,2,4,8,8]
+  attn_res: [16]
+  res_blocks: 2
+  dropout: 0.2
+  divide: 16
+
+network_global_corrector:
+  type: GlobalCorrector
+  normal01: true
+
+network_ddpm:
+  type: GaussianDiffusion
+  image_size: 128
+  conditional: true
+  color_limit: -1
+  pyramid_list: [1, 1, 2, 2]
+
+ddpm_schedule:
+  schedule: "linear"
+  n_timestep: 2000
+  linear_start: !!float 1e-6
+  linear_end: !!float 1e-2
+  sample_timesteps: 4
+#  sample_timesteps: 20
+#  sample_timesteps: 60
+
+# path
+path:
+#  pretrain_network_g: /mnt/s1/ly/LLDiff/experiments/raw/Sony_raw_ratio1_2_3/best/net_g_best.pth
+  pretrain_network_g: /home/ly/LLDIff/experiments/L118_raw/models/net_g_best.pth
+#  pretrain_network_g: ~
+  param_key_g: params
+  strict_load_g: True
+  pretrain_network_d: ~
+#  resume_state: ~
+  resume_state: /home/ly/LLDIff/experiments/L118_raw/training_states/best.state
+#  resume_state: /mnt/s1/ly/LLDiff/experiments/Sony_raw_1_2_3_less_train_data/training_states/235000.state
+  ignore_resume_networks: ['network_identity']
+
+# training settings
+train:
+  cs_on_shift: true
+  vis_train: true
+  vis_num: 150
+  train_type: ddpm_cs_pyramid
+  t_border: 1000
+  input_mode: crop
+  stage_in: raw # or srgb
+  optim_g:
+    type: Adam
+    lr: !!float 1e-4
+  optim_d:
+    type: Adam
+    lr: !!float 2e-3
+  optim_component:
+    type: Adam
+    lr: !!float 2e-3
+
+  scheduler:
+    type: MultiStepLR
+#    milestones: [50000, 75000, 100000, 150000, 200000]
+    milestones: [50000, 75000, 100000, 150000, 300000]
+    gamma: 0.5
+
+  total_iter: 500000
+  warmup_iter: -1  # no warm up
+
+# validation settings
+val:
+#  cal_score: true
+#  best_val_loss: 34.66240217803286 # 重启训练的时候需要设置
+  sample_type: ddim_pyramid_cs_sample
+  fix_seed: true
+  color_gamma: 1.0
+  use_up_v2: true
+  pyramid_list: [1, 1, 2, 2]
+  ddim_eta: !!float 1.0
+  use_kind_align: true
+  cal_all: true
+  show_all: true
+  val_freq: !!float 100
+#  val_freq: !!float 1
+  save_img: true
+  camera: L118
+#  ret_process: true
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr_skimage
+    ssim:
+      type: calculate_ssim_skimage
+
+
+# logging settings
+logger:
+  print_freq: 250
+  save_checkpoint_freq: !!float 2500
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
+
+find_unused_parameters: true

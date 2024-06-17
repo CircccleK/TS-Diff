@@ -1,0 +1,15 @@
+10-1_s19_iso2000_exp0.01_5.raw gt_s19_5.raw
+10-2_s7_iso8000_exp0.04_2.raw gt_s7_2.raw
+10-3_s11_iso16000_exp0.02_4.raw gt_s11_4.raw
+10-1_s7_iso8000_exp0.03_3.raw gt_s7_3.raw
+10-3_s13_iso16000_exp0.03_2.raw gt_s13_2.raw
+10-2_s9_iso8000_exp0.02_1.raw gt_s9_1.raw
+10-3_s15_iso160000_exp0.03_2.raw gt_s15_2.raw
+10-3_s2_iso4000_exp0.03_1.raw gt_s2_1.raw
+10-2_s13_iso1000_exp0.01_5.raw gt_s13_5.raw
+10-1_s16_iso8000_exp0.03_3.raw gt_s16_3.raw
+10-1_s8_iso2000_exp0.01_5.raw gt_s8_5.raw
+10-1_s11_iso8000_exp0.01_4.raw gt_s11_4.raw
+10-2_s20_iso16000_exp0.05_1.raw gt_s20_1.raw
+10-3_s9_iso1000_exp0.03_2.raw gt_s9_2.raw
+10-2_s2_iso4000_exp0.03_5.raw gt_s2_5.raw

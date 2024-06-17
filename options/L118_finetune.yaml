@@ -1,0 +1,197 @@
+name: L118_finetune
+model_type: RepDiffFinetuneModel
+num_gpu: 1 # test的时候需要置npm_gpu参数为1
+manual_seed: 0
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: train
+    type: LL_Dataset
+#    gt_root: /mnt/s1/ly/data/L118/raw/long
+#    input_root: /mnt/s1/ly/data/L118/raw/short
+    gt_root: /data/ly/L118/raw/long
+    input_root: /data/ly/L118/raw/short
+    fns_root: ./data/L118/L118_few.txt
+    input_mode: crop
+    concat_with_position_encoding: true
+    concat_with_hiseq: true
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+    use_flip: true
+
+    bright_aug: true
+    bright_aug_range: [0.5, 1.5]
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 12
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+    camera: L118
+#    camera: Virtual
+#    virtual_camera_count: 5
+    crop_size: 256
+    stage_in: raw # or srgb
+    save_syn_data: False # 保存raw合成的噪声
+    save_read_syn_data_to_rgb: False # 保存已经生成的raw合成噪声
+    save_syn_rgb: False # 保存合成噪声rgb版
+    read_syn_data: False # 读合成噪声的npy
+    read_real_data: True # 读合成噪声的npy
+#    real_data_root: /mnt/s1/ly/data/SID/Sony/short/
+#    real_data_root: /data/ly/SID/Sony/short/
+    train_syn_save_num: 1
+
+  val:
+    name: validation
+    type: LL_Dataset
+#    gt_root: /mnt/s1/ly/data/L118/raw/long
+#    input_root: /mnt/s1/ly/data/L118/raw/short
+    gt_root: /data/ly/L118/raw/long
+    input_root: /data/ly/L118/raw/short
+    # val
+    fns_root: ./data/L118/L118_test.txt
+    read_real_data: True
+    concat_with_hiseq: true
+    input_mode: crop
+    divide: 32
+    concat_with_position_encoding: true
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+    camera: L118
+    stage_in: raw # or srgb
+    crop_size: 512
+
+repnr_opt:
+  dont_convert_module:
+    - 'final_conv'
+    - 'mid'
+    - 'conv'
+    - 'attn'
+    - 'res_conv'
+  branch_num: 5
+  align_opts:
+    init_weight: 1.0
+    init_bias: 0.0
+  aux_conv_opts:
+    bias: true
+    init: zero_init_
+
+# network structures
+network_unet:
+  type: SR3UNet
+  inner_channel: 64
+  norm_groups: 32
+  channel_mults: [1,2,4,8,8]
+  attn_res: [16]
+  res_blocks: 2
+  dropout: 0.2
+  divide: 16
+
+network_global_corrector:
+  type: GlobalCorrector
+  normal01: true
+
+network_ddpm:
+  type: GaussianDiffusion
+  image_size: 128
+  conditional: true
+  color_limit: -1
+  pyramid_list: [1, 1, 2, 2]
+
+ddpm_schedule:
+  schedule: "linear"
+  n_timestep: 2000
+  linear_start: !!float 1e-6
+  linear_end: !!float 1e-2
+  sample_timesteps: 4
+
+# path
+path:
+  pretrain_network_g: /home/ly/RepDiff/experiments/train/pretrain/train_syn_10epoch_final_conv_mid_conv_attn_res_conv_3w/models/net_g_latest.pth
+#  pretrain_network_g: ~
+  
+  resume_state: ~
+  ignore_resume_networks: ['network_identity']
+  param_key_g: params
+  strict_load_g: False # fintune aux_bias和aux_weight是缺失的，设置为Fasle
+  pretrain_network_d: ~
+
+
+# training settings
+train:
+  cs_on_shift: true
+  vis_train: true
+  vis_num: 150
+  train_type: ddpm_cs_pyramid
+  t_border: 1000
+  input_mode: crop
+  stage_in: raw # or srgb
+
+  generalize_first: true
+  align_opt:
+    optim_g:
+      type: Adam
+      lr: !!float 1e-4
+      weight_decay: 0
+      betas: [ 0.9, 0.999 ]
+
+    scheduler:
+      type: MultiStepLR
+      milestones: [ 999999 ]
+
+  oomn_opt:
+    optim_g:
+      type: Adam
+      lr: !!float 1e-4
+      weight_decay: 0
+      betas: [ 0.9, 0.999 ]
+
+    scheduler:
+      type: MultiStepLR
+      milestones: [ 999999 ]
+
+  total_iter: 200000
+  align_iter: 200000
+  oomn_iter: 0
+  warmup_iter: -1  # no warm up
+
+# validation settings
+val:
+  #cal_score: true
+#  best_val_loss: 32.26498484569478 # 重启训练的时候需要设置
+  sample_type: ddim_pyramid_cs_sample
+  fix_seed: true
+  color_gamma: 1.0
+  use_up_v2: true
+  pyramid_list: [1, 1, 2, 2]
+  ddim_eta: !!float 1.0
+  use_kind_align: true
+  cal_all: true
+  show_all: true
+  val_freq: !!float 5000
+  save_img: False
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr_skimage
+    ssim:
+      type: calculate_ssim_skimage
+
+
+# logging settings
+logger:
+  print_freq: 250
+  save_checkpoint_freq: !!float 500
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
+
+find_unused_parameters: true

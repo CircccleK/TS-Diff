@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="ly@10.86.100.29:10086 key" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false">
+    <option name="confirmBeforeUploading" value="false" />
+    <serverData>
+      <paths name="ly@10.86.100.16:30901 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ly/RepDiff" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ly@10.86.100.29:10086 key">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/mnt/s1/ly/RepDiff" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ly@10.86.100.56:60001 key">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ly/RepDiff" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="wang">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/mnt/s1/ly/RepDiff" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
